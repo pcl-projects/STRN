@@ -1,0 +1,15 @@
+*.pyc
+.DS_Store
+node_modules/
+*.db
+*.config.json*
+*.clusters.json*
+*.resources.json*
+nosetests.xml
+/.coverage
+*.log
+.venv/
+*.sd.yml
+*.egg-info/
+/dist/
+.idea/*

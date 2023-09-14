@@ -1,0 +1,71 @@
+#!/usr/bin/env python
+
+"""
+Main script to start auto-scaling based on monitoring data.
+
+Usage:
+  themis server [ --port=<port> ] [ --log=<log_file> ]
+  themis loop [ --log=<log_file> ]
+  themis server_and_loop [ --port=<port> ] [ --log=<log_file> ]
+  themis (-h | --help)
+
+Options:
+  -h --help                 Show this screen.
+  --port=<port>             Port the server should listen on.
+  --log=<log_file>          Log file path.
+"""
+
+import subprocess
+from docopt import docopt
+import math
+import logging
+import os
+import sys
+
+DEFAULT_PORT = 8000
+
+if __name__ == "__main__":
+    args = docopt(__doc__)
+    port = args['--port'] or DEFAULT_PORT
+    log_file = args['--log'] or ''
+
+    parent_path = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
+    venv_path = os.path.realpath(os.path.join(parent_path, '.venv'))
+    if os.path.isdir(venv_path):
+        sys.path.append(parent_path)
+    from themis import config
+    from themis.monitoring import resources
+    from themis.util.common import *
+
+    # set up logging
+    setup_logging(log_file)
+
+    if args['server_and_loop']:
+
+        def run(cmd):
+            process = subprocess.Popen(cmd, shell=True, stdout=sys.stdout, stderr=sys.stderr)
+            process.communicate()
+
+        cmd_prefix = 'eval `ssh-agent -s`; '
+        cmd = os.path.realpath(__file__) + " loop --log=%s" % (log_file)
+        cmd = cmd_prefix + cmd
+        t1 = threading.Thread(target=run, args=(cmd, ))
+        t1.start()
+        cmd = os.path.realpath(__file__) + " server --port=%s --log=%s" % (port, log_file)
+        cmd = cmd_prefix + cmd
+        t2 = threading.Thread(target=run, args=(cmd, ))
+        t2.start()
+        try:
+            t2.join()
+        except KeyboardInterrupt, e:
+            pass
+    else:
+        if args['server']:
+            from themis import api
+            api.serve(port)
+        if args['loop']:
+            from themis import server
+            try:
+                server.loop()
+            except KeyboardInterrupt, e:
+                pass

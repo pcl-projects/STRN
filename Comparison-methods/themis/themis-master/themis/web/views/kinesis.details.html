@@ -1,0 +1,178 @@
+<section id="content">
+
+<header class="aui-page-header">
+  <div class="aui-page-header-inner">
+    <div class="aui-page-header-main">
+      <h1 style="font-size: 24px" id="heading-title">Details for Stream {{streamId}}</h1>
+    </div>
+  </div>
+</header>
+
+<div class="aui-page-panel">
+  <div class="aui-page-panel-inner">
+    <section class="aui-page-panel-content">
+
+      <div class="aui-tabs horizontal-tabs">
+        <ul class="tabs-menu">
+          <li class="menu-item" ng-class="{'active-tab' : active_tab==1}">
+              <a ng-click="active_tab=1">Current Load</a>
+          </li>
+          <li class="menu-item" ng-class="{'active-tab' : active_tab==2}">
+              <a ng-click="active_tab=2">History</a>
+          </li>
+          <li class="menu-item" ng-class="{'active-tab' : active_tab==3}">
+              <a ng-click="active_tab=3">Costs</a>
+          </li>
+          <li class="menu-item" ng-class="{'active-tab' : active_tab==4}">
+              <a ng-click="active_tab=4">Settings</a>
+          </li>
+        </ul>
+        <div class="tabs-pane" ng-class="{'active-pane' : active_tab==1}" id="tabs-first" style="padding: 20px;">
+
+          <div ng-hide="state.loading">
+            <button class="aui-button aui-button-primary" ng-click="refresh()">Refresh</button>
+            <table class="aui aui-table aui-table-sortable" id="hosts-table" ts-wrapper>
+              <thead>
+                <tr>
+                  <th ts-criteria="id" id="shard_id">Shard ID</th>
+                  <th ts-criteria="IncomingBytes.last" id="IncomingBytes">Incoming Bytes / m <small>(min/avg/max)</small></th>
+                  <th ts-criteria="IncomingRecords.last" id="IncomingRecords">Incoming Records / m <small>(min/avg/max)</small></th>
+                  <th ts-criteria="IteratorAgeMilliseconds.max" id="IteratorAgeMilliseconds">Iterator Age</th>
+                  <th ts-criteria="ReadProvisionedThroughputExceeded.last" id="ReadProvisionedThroughputExceeded">Read Throttles</th>
+                  <th ts-criteria="WriteProvisionedThroughputExceeded.last" id="WriteProvisionedThroughputExceeded">Write Throttles</th>
+                  <th ts-criteria="actions" id="actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr ng-repeat="value in state.data.shards_list track by value.id" ts-repeat>
+                  <td headers="shard_id">{{value.id}}</td>
+                  <td headers="IncomingBytes">{{value.IncomingBytes.last | number:0}}
+                    <small ng-show="value.IncomingBytes">({{value.IncomingBytes.min | number:0}}/{{
+                      value.IncomingBytes.average | number:0}}/{{
+                      value.IncomingBytes.max | number:0}})</small>
+                  </td>
+                  <td headers="IncomingRecords">{{value.IncomingRecords.last | number:0}}
+                    <small ng-show="value.IncomingRecords">({{value.IncomingRecords.min | number:0}}/{{
+                      value.IncomingRecords.average | number:0}}/{{
+                      value.IncomingRecords.max | number:0}})</small>
+                  </td>
+                  <td headers="IteratorAgeMilliseconds">{{value.IteratorAgeMilliseconds.last | number:0}}</td>
+                  <td headers="ReadProvisionedThroughputExceeded">{{value.ReadProvisionedThroughputExceeded.last | number:0}}</td>
+                  <td headers="WriteProvisionedThroughputExceeded">{{value.WriteProvisionedThroughputExceeded.last | number:0}}</td>
+                  <td headers="actions">n/a</td>
+                </tr>
+                <tr class="summary" ng-hide="!state.data.shards_list.length">
+                  <td headers="id">Total Σ {{state.data.shards_list.length}} shards</td>
+                  <td headers="IncomingBytes">{{state.data.total.IncomingBytes.last | number:0}}
+                    <small>({{state.data.total.IncomingBytes.min | number:0}}/{{
+                      state.data.total.IncomingBytes.average | number:0}}/{{
+                      state.data.total.IncomingBytes.max | number:0}})</small>
+                  </td>
+                  <td headers="IncomingRecords">{{state.data.total.IncomingRecords.last | number:0}}
+                    <small>({{state.data.total.IncomingRecords.min | number:0}}/{{
+                      state.data.total.IncomingRecords.average | number:0}}/{{
+                      state.data.total.IncomingRecords.max | number:0}})</small>
+                  </td>
+                  <td headers="IteratorAgeMilliseconds">{{state.data.total.GetRecords_IteratorAgeMilliseconds.last | number:0}}</td>
+                  <td headers="ReadProvisionedThroughputExceeded">{{state.data.total.ReadProvisionedThroughputExceeded.last | number:0}}</td>
+                  <td headers="WriteProvisionedThroughputExceeded">{{state.data.total.WriteProvisionedThroughputExceeded.last | number:0}}</td>
+                  <td headers="actions"></td>
+                </tr>
+              </tbody>
+            </table>
+            <p>
+              Note: Table may contain metrics that are cached for a short period of time.
+            </p>
+          </div>
+          <div class="aui panel-centered" ng-show="state.loading">
+            <img src="img/loading.gif" alt="loading"/> loading data ...
+          </div>
+
+        </div>
+        <div class="tabs-pane" ng-class="{'active-pane' : active_tab==2}" id="tabs-second" style="padding: 20px;">
+
+          <div ng-hide="history.loading">
+            <button class="aui-button aui-button-primary" ng-click="refresh()">Refresh</button>
+            <h2>Historical States and Actions</h2>
+            <table class="aui aui-table aui-table-sortable" id="hosts-table" ts-wrapper>
+              <thead>
+                <tr>
+                  <th ts-criteria="timestamp" id="hist_timestamp" ts-default="descending">Time</th>
+                  <th ts-criteria="state.shards.count" id="hist_shards">Number of Shards</th>
+                  <th ts-criteria="state.stream.IncomingBytes.last" id="hist_cpu">Incoming Bytes / m <small>(min/avg/max)</small></th>
+                  <th ts-criteria="state.stream.IncomingRecords.last" id="hist_mem">Incoming Records / m <small>(min/avg/max)</small></th>
+                  <th ts-criteria="state.stream.GetRecords_IteratorAgeMilliseconds.max" id="hist_iter_age">Iterator Age</th>
+                  <th ts-criteria="state.stream.ReadProvisionedThroughputExceeded.last" id="hist_read_throttle">Read Throttles</th>
+                  <th ts-criteria="state.stream.WriteProvisionedThroughputExceeded.last" id="hist_write_throttle">Write Throttles</th>
+                  <th ts-criteria="action" id="hist_action">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr ng-repeat="value in history.data track by value.timestamp" ts-repeat>
+                  <td headers="hist_timestamp">{{value.timestamp | datetime}}</td>
+                  <td headers="hist_shards">{{value.state.shards.count}}</td>
+                  <td headers="hist_cpu">{{value.state.stream.IncomingBytes.last | number:0}}
+                    <small ng-show="value.state.stream.IncomingBytes">({{value.state.stream.IncomingBytes.min | number:0}}/{{
+                      value.state.stream.IncomingBytes.average | number:0}}/{{
+                      value.state.stream.IncomingBytes.max | number:0}})</small>
+                  </td>
+                  <td headers="hist_mem">{{value.state.stream.IncomingRecords.last | number:0}}
+                    <small ng-show="value.state.stream.IncomingRecords">({{value.state.stream.IncomingRecords.min | number:0}}/{{
+                      value.state.stream.IncomingRecords.average | number:0}}/{{
+                      value.state.stream.IncomingRecords.max | number:0}})</small>
+                  </td>
+                  <td headers="hist_mem">{{value.state.stream.GetRecords_IteratorAgeMilliseconds.last | number:0}}</td>
+                  <td headers="hist_mem">{{value.state.stream.ReadProvisionedThroughputExceeded.last | number:0}}</td>
+                  <td headers="hist_mem">{{value.state.stream.WriteProvisionedThroughputExceeded.last | number:0}}</td>
+                  <td headers="hist_action">{{value.action}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="aui panel-centered" ng-show="history.loading">
+            <img src="img/loading.gif" alt="loading"/> loading data ...
+          </div>
+
+        </div>
+        <div class="tabs-pane" ng-class="{'active-pane' : active_tab==3}" id="tabs-third" style="padding: 20px;">
+
+          <div ng-hide="history.loading">
+            <button class="aui-button aui-button-primary" ng-click="refresh()">Refresh</button>
+            <h2>Costs Overview</h2>
+            t.b.a.
+          </div>
+          <div class="aui panel-centered" ng-show="history.loading">
+            <img src="img/loading.gif" alt="loading"/> loading data ...
+          </div>
+
+        </div>
+        <div class="tabs-pane" ng-class="{'active-pane' : active_tab==4}" id="tabs-fourth" style="padding: 20px;">
+          <form class="aui">
+            <table class="aui aui-table aui-table-sortable" id="hosts-table" ts-wrapper>
+              <thead>
+                <tr>
+                  <th ts-criteria="key" id="config_key" ts-default>Key</th>
+                  <th ts-criteria="load.cpu" id="config_descr">Description</th>
+                  <th ts-criteria="value" id="config_value" style="width: 40%">Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr ng-repeat="entry in settings.config track by entry.key" ts-repeat>
+                  <td headers="config_key">{{entry.key}}</td>
+                  <td headers="config_descr">{{entry.description}}</td>
+                  <td headers="config_value"><input class="text long-field" ng-model="entry.value" style="width: 100%"/></td>
+                </tr>
+              </tbody>
+            </table>
+            <div style="margin-top: 20px">
+              <button class="aui-button aui-button-primary" ng-click="saveConfig()"
+                ng-disabled="settings.saving">
+                {{settings.saving ? 'Saving...' : 'Save'}}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+</section>
